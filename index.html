@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Scanner Upload</title>
+    </head>
+    <body>
+        <button onclick="connectScanner()">Connect to Scanner</button>
+        <button onclick="scan()">Scan</button>
+
+        <script>
+            let scanner;
+            async function connectScanner() {
+                try {
+                    // Prompt user to select any serial port.
+                    // const port = await navigator.serial.requestPort();
+                    // await port.open({ baudRate: 9600 });
+                    // Wait for the serial port to open.
+
+                    const device = await navigator.usb.requestDevice({
+                        filters: [{ vendorId: "1008", productId: "24581" }]
+                    });
+                    await device.open();
+                    await device.selectConfiguration(1); // Selecting configuration
+                    await device.claimInterface(0); // Claiming the interface
+                    scanner = device;
+                    console.log("Scanner connected");
+                } catch (error) {
+                    console.error("Error connecting to scanner:", error);
+                }
+            }
+
+            async function scan() {
+                if (!scanner) {
+                    console.error("Scanner not connected");
+                    return;
+                }
+
+                try {
+                    // Perform scan operations here
+                    console.log("Scanning...");
+                } catch (error) {
+                    console.error("Error scanning:", error);
+                }
+            }
+
+            async function getConnectedDevices() {
+                try {
+                    const devices = await navigator.usb.getDevices();
+                    if (devices.length > 0) {
+                        console.log("Connected USB devices:", devices);
+                    } else {
+                        console.log("No USB devices connected.");
+                    }
+                } catch (error) {
+                    console.error("Error getting USB devices:", error);
+                }
+            }
+
+            // Call the function to get the list of connected devices
+            getConnectedDevices();
+
+            async function requestUSBDevice() {
+                try {
+                    const device = await navigator.usb.requestDevice({
+                        filters: [{ vendorId: "1008", productId: "24581" }]
+                    });
+                    // Access granted, do something with the device
+                    console.log("USB Device Access Granted:", device);
+                } catch (error) {
+                    console.error("Error requesting USB device:", error);
+                }
+            }
+
+            // Call the function to request USB device access
+            // requestUSBDevice();
+        </script>
+    </body>
+</html>

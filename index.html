@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Scanner Upload</title>
+        <title>USB Device Access</title>
     </head>
     <body>
         <button onclick="connectScanner()">Connect to Scanner</button>
@@ -13,11 +13,6 @@
             let scanner;
             async function connectScanner() {
                 try {
-                    // Prompt user to select any serial port.
-                    // const port = await navigator.serial.requestPort();
-                    // await port.open({ baudRate: 9600 });
-                    // Wait for the serial port to open.
-
                     const device = await navigator.usb.requestDevice({
                         filters: [{ vendorId: "1008", productId: "24581" }]
                     });
@@ -33,33 +28,45 @@
 
             async function scan() {
                 if (!scanner) {
-                    console.error("Scanner not connected");
+                    console.warn("Scanner not connected");
                     return;
                 }
 
                 try {
                     // Perform scan operations here
-                    console.log("Scanning...");
+                    // Retrieve the endpoint(s) associated with the interface
+                    const endpointIn = scanner.configuration.interfaces[0].alternate.endpoints.find(
+                        (endpoint) => endpoint.direction === "in"
+                    );
+
+                    console.log("Scanning...", scanner, endpointIn);
+                    // Create a transfer object for reading data
+                    const transferIn = await scanner.transferIn(endpointIn.endpointNumber, endpointIn.packetSize);
+                    console.log("transferIn:", transferIn);
+                    function initiateNextTransfer() {
+                        transferIn.acknowledge();
+                    }
+
+                    // Handle incoming data
+                    transferIn.oncomplete = (event) => {
+                        const data = new Uint8Array(event.data.buffer);
+                        console.log("Received data:", data);
+
+                        // Continue reading data
+                        initiateNextTransfer();
+                    };
+
+                    // Handle errors
+                    transferIn.onerror = (error) => {
+                        console.error("Transfer error:", error);
+                    };
+
+                    // Start the initial transfer
+                    initiateNextTransfer();
                 } catch (error) {
                     console.error("Error scanning:", error);
                 }
             }
-
-            async function getConnectedDevices() {
-                try {
-                    const devices = await navigator.usb.getDevices();
-                    if (devices.length > 0) {
-                        console.log("Connected USB devices:", devices);
-                    } else {
-                        console.log("No USB devices connected.");
-                    }
-                } catch (error) {
-                    console.error("Error getting USB devices:", error);
-                }
-            }
-
-            // Call the function to get the list of connected devices
-            getConnectedDevices();
 
             async function requestUSBDevice() {
                 try {
